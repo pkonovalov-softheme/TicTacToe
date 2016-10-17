@@ -22,6 +22,8 @@ namespace RosettaTicTacToe
 
         // GameBoard holds index into Players[] (0 or 1) or Unplayed (-1) if location not yet taken
         static int[] GameBoard = new int[9];
+        static Dictionary<int[], double> values = new Dictionary<int[], double>();
+        static Stack<int[]> states;
 
         static int[] corners = new int[] { 0, 2, 6, 8 };
 
@@ -36,6 +38,7 @@ namespace RosettaTicTacToe
          *================================================================*/
         static void Main(string[] args)
         {
+
             while (true)
             {
                 Console.Clear();
@@ -44,6 +47,9 @@ namespace RosettaTicTacToe
                 displayGameBoard();
                 int currentPlayer = rnd.Next(0, 2);  // current player represented by Players[] index of 0 or 1
                 Console.WriteLine("The first move goes to {0} who is playing {1}s.\n", playerName(currentPlayer), playerToken(currentPlayer));
+
+                states = new Stack<int[]>();
+
                 while (true)
                 {
                     int thisMove = getMoveFor(currentPlayer);
@@ -77,7 +83,10 @@ namespace RosettaTicTacToe
         static int getMoveFor(int player)
         {
             if (player == Human)
-                return getManualMove(player);
+            {
+                //return getManualMove(player);
+                return getBestMove(player);
+            }
             else
             {
                 //int selectedMove = getManualMove(player);
@@ -111,6 +120,7 @@ namespace RosettaTicTacToe
             }
         }
 
+        // Check is it random?
         static int getRandomMove(int player)
         {
             int movesLeft = GameBoard.Count(position => position == Unplayed);
@@ -135,10 +145,49 @@ namespace RosettaTicTacToe
             return getRandomMove(player);
         }
 
+        //----------------
+        // Smart logic
+
+        static int[] GetSwapedValue()
+        {
+            var GameBoardSwap = new int[9];
+
+            for (int i = 0; i < GameBoard.Length; i++)
+            {
+                if (GameBoard[i] == 0)
+                {
+                    GameBoardSwap[i] = 1;
+                }
+                else if (GameBoard[i] == 1)
+                {
+                    GameBoardSwap[i] = 0;
+                }
+            }
+
+            return GameBoardSwap;
+        }
+
+
+        //static bool IsValueExists()
+        //{
+        //    if (values.ContainsKey(GameBoard))
+        //    {
+        //        return true;
+        //    }
+
+          
+
+        //    return values.ContainsKey(GameBoardSwap);
+        //}
+
+
         // purposely not implemented (this is the thinking part).
         static int getBestMove(int player)
         {
-            return -1;
+             states.Push(GameBoard);
+             
+
+             return -1;
         }
 
         static bool checkForWinningMove(int player, out int posToPlay)
