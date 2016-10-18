@@ -47,54 +47,67 @@ namespace RosettaTicTacToe
         private static void Main(string[] args)
         {
 
-            while (true)
-            {
-                Console.Clear();
-                Console.WriteLine("Welcome to Rosetta Code Tic-Tac-Toe for C#.");
-                InitializeGameBoard();
-                DisplayGameBoard();
+
+               // Console.Clear();
+               // Console.WriteLine("Welcome to Rosetta Code Tic-Tac-Toe for C#.");
+                
+              //  DisplayGameBoard();
                 int currentPlayer = _rnd.Next(0, 2);  // current player represented by Players[] index of 0 or 1
-                Console.WriteLine("The first move goes to {0} who is playing {1}s.\n", PlayerName(currentPlayer), PlayerToken(currentPlayer));
+             //   Console.WriteLine("The first move goes to {0} who is playing {1}s.\n", PlayerName(currentPlayer), PlayerToken(currentPlayer));
 
                 _lastStates = new Stack<int[]>();
 
-                while (true)
+                for (ulong y = 0; y < 100000; y++)
                 {
-                    int thisMove = GetMoveFor(currentPlayer);
-                    if (thisMove == Unplayed)
+                    InitializeGameBoard();
+                    if (y > 0 && y % 1000 == 0)
                     {
-                        Console.WriteLine("{0}, you've quit the game ... am I that good?", PlayerName(currentPlayer));
-                        break;
+                        Console.WriteLine("Perfomance: {0}", (double)aiWon / totalGames);
                     }
-                    PlayMove(thisMove, currentPlayer);
-                    DisplayGameBoard();
-                    if (IsGameWon())
-                    {
-                        if (currentPlayer == Human)
-                        {
-                            UpdateValues(-1);
-                        }
-                        else
-                        {
-                            aiWon++;
-                            UpdateValues(1);
-                        }
 
-                        totalGames++;
-
-                        Console.WriteLine("{0} has won the game!", PlayerName(currentPlayer));
-                        break;
-                    }
-                    else if (IsGameTied())
-                    {
-                        UpdateValues(0.5);
-                        Console.WriteLine("Cat game ... we have a tie.");
-                        break;
-                    }
+                    PlayGame(currentPlayer);
                     currentPlayer = GetNextPlayer(currentPlayer);
                 }
-                if (!PlayAgain())
-                    return;
+                //if (!PlayAgain())
+                //    return;
+        }
+
+        private static void PlayGame(int currentPlayer)
+        {
+            while (true)
+            {
+                int thisMove = GetMoveFor(currentPlayer);
+                if (thisMove == Unplayed)
+                {
+                    Console.WriteLine("{0}, you've quit the game ... am I that good?", PlayerName(currentPlayer));
+                    throw new InvalidOperationException();
+                }
+
+                PlayMove(thisMove, currentPlayer);
+                //DisplayGameBoard();
+                if (IsGameWon())
+                {
+                    if (currentPlayer == Human)
+                    {
+                        UpdateValues(-1);
+                    }
+                    else
+                    {
+                        aiWon++;
+                        UpdateValues(1);
+                    }
+
+                    totalGames++;
+
+                    // Console.WriteLine("{0} has won the game!", PlayerName(currentPlayer));
+                    break;
+                }
+                else if (IsGameTied())
+                {
+                    UpdateValues(0.5);
+                    // Console.WriteLine("Cat game ... we have a tie.");
+                    break;
+                }
             }
         }
 
@@ -135,7 +148,8 @@ namespace RosettaTicTacToe
                 //int selectedMove = getRandomMove(player);
                 int selectedMove = GetSemiRandomMove(player);
                 //int selectedMove = GetBestMove(player);
-                Console.WriteLine("{0} selects position {1}.", PlayerName(player), selectedMove + 1);
+               // Console.WriteLine("{0} selects position {1}.", PlayerName(player), selectedMove + 1);
+                Debug.Assert(selectedMove != Unplayed);
                 return selectedMove;
             }
         }
@@ -169,7 +183,7 @@ namespace RosettaTicTacToe
             int x = _rnd.Next(0, movesLeft);
             for (int i = 0; i < GameBoard.Length; i++)  // walk board ...
             {
-                if (GameBoard[i] == Unplayed && x < 0)    // until we reach the unplayed move.
+                if (GameBoard[i] == Unplayed && x <= 0)    // until we reach the unplayed move.
                     return i;
                 x--;
             }
