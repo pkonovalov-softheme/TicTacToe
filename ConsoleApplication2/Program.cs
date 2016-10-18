@@ -1,108 +1,150 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
 namespace RosettaTicTacToe
 {
-    class Program
+    internal class Program
     {
 
         /*================================================================
          *Pieces (players and board)
          *================================================================*/
-        static string[][] Players = new string[][] {
+
+        private static string[][] _players = new string[][] {
       new string[] { "COMPUTER", "X" }, // computer player
       new string[] { "HUMAN", "O" }     // human player
     };
 
-        const int Unplayed = -1;
-        const int Computer = 0;
-        const int Human = 1;
+        private const int Unplayed = -1;
+        private const int Computer = 0;
+        private const int Human = 1;
+        private const double E = 0.3; //epsilon
+        private const double Alpha = 0.1; //value update factor
+        private const double Beta = 0.2; // How much learn is reduced between states
+        private static ulong aiWon = 0;
+        private static ulong totalGames = 0;
 
         // GameBoard holds index into Players[] (0 or 1) or Unplayed (-1) if location not yet taken
-        static int[] GameBoard = new int[9];
-        static Dictionary<int[], double> values = new Dictionary<int[], double>();
-        static Stack<int[]> states;
+        private static readonly int[] GameBoard = new int[9];
+        private static readonly Dictionary<int[], double> Values = new Dictionary<int[], double>();
+        private static Stack<int[]> _lastStates;
 
-        static int[] corners = new int[] { 0, 2, 6, 8 };
+        private static int[] _corners = new int[] { 0, 2, 6, 8 };
 
-        static int[][] wins = new int[][] {
-      new int[] { 0, 1, 2 }, new int[] { 3, 4, 5 }, new int[] { 6, 7, 8 },
-      new int[] { 0, 3, 6 }, new int[] { 1, 4, 7 }, new int[] { 2, 5, 8 },
-      new int[] { 0, 4, 8 }, new int[] { 2, 4, 6 } };
+        private static int[][] _wins = new int[][] {
+          new int[] { 0, 1, 2 }, new int[] { 3, 4, 5 }, new int[] { 6, 7, 8 },
+          new int[] { 0, 3, 6 }, new int[] { 1, 4, 7 }, new int[] { 2, 5, 8 },
+          new int[] { 0, 4, 8 }, new int[] { 2, 4, 6 } };
 
 
         /*================================================================
          *Main Game Loop (this is what runs/controls the game)
          *================================================================*/
-        static void Main(string[] args)
+
+        private static void Main(string[] args)
         {
 
             while (true)
             {
                 Console.Clear();
                 Console.WriteLine("Welcome to Rosetta Code Tic-Tac-Toe for C#.");
-                initializeGameBoard();
-                displayGameBoard();
-                int currentPlayer = rnd.Next(0, 2);  // current player represented by Players[] index of 0 or 1
-                Console.WriteLine("The first move goes to {0} who is playing {1}s.\n", playerName(currentPlayer), playerToken(currentPlayer));
+                InitializeGameBoard();
+                DisplayGameBoard();
+                int currentPlayer = _rnd.Next(0, 2);  // current player represented by Players[] index of 0 or 1
+                Console.WriteLine("The first move goes to {0} who is playing {1}s.\n", PlayerName(currentPlayer), PlayerToken(currentPlayer));
 
-                states = new Stack<int[]>();
+                _lastStates = new Stack<int[]>();
 
                 while (true)
                 {
-                    int thisMove = getMoveFor(currentPlayer);
+                    int thisMove = GetMoveFor(currentPlayer);
                     if (thisMove == Unplayed)
                     {
-                        Console.WriteLine("{0}, you've quit the game ... am I that good?", playerName(currentPlayer));
+                        Console.WriteLine("{0}, you've quit the game ... am I that good?", PlayerName(currentPlayer));
                         break;
                     }
-                    playMove(thisMove, currentPlayer);
-                    displayGameBoard();
-                    if (isGameWon())
+                    PlayMove(thisMove, currentPlayer);
+                    DisplayGameBoard();
+                    if (IsGameWon())
                     {
-                        Console.WriteLine("{0} has won the game!", playerName(currentPlayer));
+                        if (currentPlayer == Human)
+                        {
+                            UpdateValues(-1);
+                        }
+                        else
+                        {
+                            aiWon++;
+                            UpdateValues(1);
+                        }
+
+                        totalGames++;
+
+                        Console.WriteLine("{0} has won the game!", PlayerName(currentPlayer));
                         break;
                     }
-                    else if (isGameTied())
+                    else if (IsGameTied())
                     {
+                        UpdateValues(0.5);
                         Console.WriteLine("Cat game ... we have a tie.");
                         break;
                     }
-                    currentPlayer = getNextPlayer(currentPlayer);
+                    currentPlayer = GetNextPlayer(currentPlayer);
                 }
-                if (!playAgain())
+                if (!PlayAgain())
                     return;
+            }
+        }
+
+        private static void UpdateValues(double reward)
+        {
+            Debug.Assert(reward >= -1 && reward <= 1 );
+
+            double prevValue = reward;
+
+            while (_lastStates.Count > 0)
+            {
+                int[] state = _lastStates.Pop();
+                if (!Values.ContainsKey(state))
+                {
+                    Values.Add(state, 0.5);
+                }
+
+                double curValue = Values[state];
+                double newValue = curValue + Alpha * (prevValue - curValue);
+                prevValue = Beta * newValue; //?
             }
         }
 
         /*================================================================
          *Move Logic
          *================================================================*/
-        static int getMoveFor(int player)
+
+        private static int GetMoveFor(int player)
         {
             if (player == Human)
             {
                 //return getManualMove(player);
-                return getBestMove(player);
+                return GetBestMove(player);
             }
             else
             {
                 //int selectedMove = getManualMove(player);
                 //int selectedMove = getRandomMove(player);
-                int selectedMove = getSemiRandomMove(player);
-                //int selectedMove = getBestMove(player);
-                Console.WriteLine("{0} selects position {1}.", playerName(player), selectedMove + 1);
+                int selectedMove = GetSemiRandomMove(player);
+                //int selectedMove = GetBestMove(player);
+                Console.WriteLine("{0} selects position {1}.", PlayerName(player), selectedMove + 1);
                 return selectedMove;
             }
         }
 
-        static int getManualMove(int player)
+        private static int GetManualMove(int player)
         {
             while (true)
             {
-                Console.Write("{0}, enter you move (number): ", playerName(player));
+                Console.Write("{0}, enter you move (number): ", PlayerName(player));
                 ConsoleKeyInfo keyInfo = Console.ReadKey();
                 Console.WriteLine();  // keep the display pretty
                 if (keyInfo.Key == ConsoleKey.Escape)
@@ -120,11 +162,11 @@ namespace RosettaTicTacToe
             }
         }
 
-        // Check is it random?
-        static int getRandomMove(int player)
+        // Check is it random? - Pkonoval
+        private static int GetRandomMove(int player)
         {
             int movesLeft = GameBoard.Count(position => position == Unplayed);
-            int x = rnd.Next(0, movesLeft);
+            int x = _rnd.Next(0, movesLeft);
             for (int i = 0; i < GameBoard.Length; i++)  // walk board ...
             {
                 if (GameBoard[i] == Unplayed && x < 0)    // until we reach the unplayed move.
@@ -135,80 +177,115 @@ namespace RosettaTicTacToe
         }
 
         // plays random if no winning move or needed block.
-        static int getSemiRandomMove(int player)
+        private static int GetSemiRandomMove(int player)
         {
             int posToPlay;
-            if (checkForWinningMove(player, out posToPlay))
+            if (CheckForWinningMove(player, out posToPlay))
                 return posToPlay;
-            if (checkForBlockingMove(player, out posToPlay))
+            if (CheckForBlockingMove(player, out posToPlay))
                 return posToPlay;
-            return getRandomMove(player);
+            return GetRandomMove(player);
         }
 
         //----------------
         // Smart logic
 
-        static int[] GetSwapedValue()
-        {
-            var GameBoardSwap = new int[9];
+        //private static int[] GetSwapedValue()
+        //{
+        //    var gameBoardSwap = new int[9];
 
-            for (int i = 0; i < GameBoard.Length; i++)
-            {
-                if (GameBoard[i] == 0)
-                {
-                    GameBoardSwap[i] = 1;
-                }
-                else if (GameBoard[i] == 1)
-                {
-                    GameBoardSwap[i] = 0;
-                }
-            }
+        //    for (int i = 0; i < GameBoard.Length; i++)
+        //    {
+        //        if (GameBoard[i] == 0)
+        //        {
+        //            gameBoardSwap[i] = 1;
+        //        }
+        //        else if (GameBoard[i] == 1)
+        //        {
+        //            gameBoardSwap[i] = 0;
+        //        }
+        //    }
 
-            return GameBoardSwap;
-        }
+        //    return gameBoardSwap;
+        //}
 
 
         //static bool IsValueExists()
         //{
-        //    if (values.ContainsKey(GameBoard))
+        //    if (Values.ContainsKey(GameBoard))
         //    {
         //        return true;
         //    }
 
           
 
-        //    return values.ContainsKey(GameBoardSwap);
+        //    return Values.ContainsKey(GameBoardSwap);
         //}
 
 
         // purposely not implemented (this is the thinking part).
-        static int getBestMove(int player)
+        private static int GetBestMove(int player)
         {
-             states.Push(GameBoard);
-             
+             _lastStates.Push(GameBoard);
 
-             return -1;
+            double res = _rnd.NextDouble();
+            if (res < E)
+            {
+                return GetRandomMove(player);
+            }
+
+            return GetBestPosition(player);
         }
 
-        static bool checkForWinningMove(int player, out int posToPlay)
+        private static int GetBestPosition(int player)
+        {
+            KeyValuePair<double, int> winner = new KeyValuePair<double, int>(0, 0);
+
+            for (int i = 0; i < GameBoard.Length; i++)
+            {
+                if (GameBoard[i] == Unplayed)
+                {
+                    GameBoard[i] = player;
+                    double res;
+                    bool contain = Values.TryGetValue(GameBoard, out res);
+                    if (!contain)
+                    {
+                        Values.Add(GameBoard, 0.5);
+                    }
+
+                    if (winner.Key < res)
+                    {
+                        winner = new KeyValuePair<double, int>(res, i);
+                    }
+
+                    //positions.Add(res, i);
+                    GameBoard[i] = Unplayed;
+                }
+            }
+
+            return winner.Value;
+        }
+
+
+        private static bool CheckForWinningMove(int player, out int posToPlay)
         {
             posToPlay = Unplayed;
-            foreach (var line in wins)
-                if (twoOfThreeMatchPlayer(player, line, out posToPlay))
+            foreach (var line in _wins)
+                if (TwoOfThreeMatchPlayer(player, line, out posToPlay))
                     return true;
             return false;
         }
 
-        static bool checkForBlockingMove(int player, out int posToPlay)
+        private static bool CheckForBlockingMove(int player, out int posToPlay)
         {
             posToPlay = Unplayed;
-            foreach (var line in wins)
-                if (twoOfThreeMatchPlayer(getNextPlayer(player), line, out posToPlay))
+            foreach (var line in _wins)
+                if (TwoOfThreeMatchPlayer(GetNextPlayer(player), line, out posToPlay))
                     return true;
             return false;
         }
 
-        static bool twoOfThreeMatchPlayer(int player, int[] line, out int posToPlay)
+        private static bool TwoOfThreeMatchPlayer(int player, int[] line, out int posToPlay)
         {
             int cnt = 0;
             posToPlay = int.MinValue;
@@ -222,22 +299,22 @@ namespace RosettaTicTacToe
             return cnt == 2 && posToPlay >= 0;
         }
 
-        static void playMove(int boardPosition, int player)
+        private static void PlayMove(int boardPosition, int player)
         {
             GameBoard[boardPosition] = player;
         }
 
-        static bool isGameWon()
+        private static bool IsGameWon()
         {
-            return wins.Any(line => takenBySamePlayer(line[0], line[1], line[2]));
+            return _wins.Any(line => TakenBySamePlayer(line[0], line[1], line[2]));
         }
 
-        static bool takenBySamePlayer(int a, int b, int c)
+        private static bool TakenBySamePlayer(int a, int b, int c)
         {
             return GameBoard[a] != Unplayed && GameBoard[a] == GameBoard[b] && GameBoard[a] == GameBoard[c];
         }
 
-        static bool isGameTied()
+        private static bool IsGameTied()
         {
             return !GameBoard.Any(spot => spot == Unplayed);
         }
@@ -245,47 +322,47 @@ namespace RosettaTicTacToe
         /*================================================================
          *Misc Methods
          *================================================================*/
-        static Random rnd = new Random();
+        private static Random _rnd = new Random();
 
-        static void initializeGameBoard()
+        private static void InitializeGameBoard()
         {
             for (int i = 0; i < GameBoard.Length; i++)
                 GameBoard[i] = Unplayed;
         }
 
-        static string playerName(int player)
+        private static string PlayerName(int player)
         {
-            return Players[player][0];
+            return _players[player][0];
         }
 
-        static string playerToken(int player)
+        private static string PlayerToken(int player)
         {
-            return Players[player][1];
+            return _players[player][1];
         }
 
-        static int getNextPlayer(int player)
+        private static int GetNextPlayer(int player)
         {
             return (player + 1) % 2;
         }
 
-        static void displayGameBoard()
+        private static void DisplayGameBoard()
         {
-            Console.WriteLine(" {0} | {1} | {2}", pieceAt(0), pieceAt(1), pieceAt(2));
+            Console.WriteLine(" {0} | {1} | {2}", PieceAt(0), PieceAt(1), PieceAt(2));
             Console.WriteLine("---|---|---");
-            Console.WriteLine(" {0} | {1} | {2}", pieceAt(3), pieceAt(4), pieceAt(5));
+            Console.WriteLine(" {0} | {1} | {2}", PieceAt(3), PieceAt(4), PieceAt(5));
             Console.WriteLine("---|---|---");
-            Console.WriteLine(" {0} | {1} | {2}", pieceAt(6), pieceAt(7), pieceAt(8));
+            Console.WriteLine(" {0} | {1} | {2}", PieceAt(6), PieceAt(7), PieceAt(8));
             Console.WriteLine();
         }
 
-        static string pieceAt(int boardPosition)
+        private static string PieceAt(int boardPosition)
         {
             if (GameBoard[boardPosition] == Unplayed)
                 return (boardPosition + 1).ToString();  // display 1..9 on board rather than 0..8
-            return playerToken(GameBoard[boardPosition]);
+            return PlayerToken(GameBoard[boardPosition]);
         }
 
-        private static bool playAgain()
+        private static bool PlayAgain()
         {
             Console.WriteLine("\nDo you want to play again?");
             return Console.ReadKey(false).Key == ConsoleKey.Y;
