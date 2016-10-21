@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApplication2", "ConsoleApplication2\ConsoleApplication2.csproj", "{B7319B58-6044-43EA-B29A-299282BEE850}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFormsApplication1", "WindowsFormsApplication1\WindowsFormsApplication1.csproj", "{FB4CD56A-B9A9-4352-A37C-83983C3D65EB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{B7319B58-6044-43EA-B29A-299282BEE850}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7319B58-6044-43EA-B29A-299282BEE850}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7319B58-6044-43EA-B29A-299282BEE850}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB4CD56A-B9A9-4352-A37C-83983C3D65EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB4CD56A-B9A9-4352-A37C-83983C3D65EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB4CD56A-B9A9-4352-A37C-83983C3D65EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB4CD56A-B9A9-4352-A37C-83983C3D65EB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
